@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "mycharts.fullname" . }}-custom-dns-pod
+  labels:
+  {{- include "mycharts.labels" . | nindent 4 }}
+spec:
+  containers:
+  - image: nginx
+    name: nginx-dns-server
+  dnsConfig:
+    nameservers:
+    - 10.96.0.10
+    searches:
+    - monitoring-bundle.svc.cluster.local
+  dnsPolicy: None

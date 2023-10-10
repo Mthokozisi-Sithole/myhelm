@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mycharts.fullname" . }}-prometheus
+  labels:
+  {{- include "mycharts.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.prometheus.replicas }}
+  selector:
+    matchLabels:
+      app: prometheus
+    {{- include "mycharts.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: prometheus
+      {{- include "mycharts.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - env:
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.prometheus.prometheus.image.repository }}:{{ .Values.prometheus.prometheus.image.tag
+          | default .Chart.AppVersion }}
+        name: prometheus
+        ports:
+        - containerPort: 9090
+        resources: {}
+        volumeMounts:
+        - mountPath: /etc/prometheus/prometheus.yml
+          name: prometheus-config-volume
+          subPath: prometheus.yml
+        - mountPath: /prometheus
+          name: prometheus-data-volume
+      volumes:
+      - configMap:
+          name: {{ include "mycharts.fullname" . }}-prometheus-config
+        name: prometheus-config-volume
+      - name: prometheus-data-volume
+        persistentVolumeClaim:
+          claimName: {{ include "mycharts.fullname" . }}-prometheus-data

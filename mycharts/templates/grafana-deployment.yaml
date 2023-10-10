@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mycharts.fullname" . }}-grafana-deployment
+  labels:
+  {{- include "mycharts.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.grafanaDeployment.replicas }}
+  selector:
+    matchLabels:
+      app: grafana
+    {{- include "mycharts.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: grafana
+      {{- include "mycharts.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - env:
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.grafanaDeployment.grafana.image.repository }}:{{ .Values.grafanaDeployment.grafana.image.tag
+          | default .Chart.AppVersion }}
+        name: grafana
+        ports:
+        - containerPort: 3000
+        resources: {}
+        volumeMounts:
+        - mountPath: /var/lib/grafana
+          name: grafana-data
+        - mountPath: /etc/grafana/provisioning/datasources
+          name: grafana-provisioning-datasources
+        - mountPath: /etc/grafana/provisioning/dashboards
+          name: grafana-provisioning-dashboards
+        - mountPath: /var/lib/grafana/dashboards
+          name: dashboards-config
+      volumes:
+      - emptyDir: {}
+        name: grafana-data
+      - configMap:
+          name: {{ include "mycharts.fullname" . }}-grafana-provisioning-datasources
+        name: grafana-provisioning-datasources
+      - configMap:
+          name: {{ include "mycharts.fullname" . }}-grafana-provisioning-dashboards
+        name: grafana-provisioning-dashboards
+      - configMap:
+          name: {{ include "mycharts.fullname" . }}-grafana-dashboards
+        name: dashboards-config

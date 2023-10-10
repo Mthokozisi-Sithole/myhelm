@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mycharts.fullname" . }}-deployment
+  labels:
+  {{- include "mycharts.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.deployment.replicas }}
+  selector:
+    matchLabels:
+      app: victoriametrics
+    {{- include "mycharts.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: victoriametrics
+      {{- include "mycharts.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - env:
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.deployment.victoriametrics.image.repository }}:{{ .Values.deployment.victoriametrics.image.tag
+          | default .Chart.AppVersion }}
+        name: victoriametrics
+        ports:
+        - containerPort: 8428
+        - containerPort: 8480
+        resources: {}
+        volumeMounts:
+        - mountPath: /etc/victoriametrics
+          name: config-volume
+      volumes:
+      - configMap:
+          name: {{ include "mycharts.fullname" . }}-config
+        name: config-volume
